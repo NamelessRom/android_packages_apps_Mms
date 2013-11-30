@@ -165,4 +165,12 @@
     <string name="send_delay_30seconds">30 seconds</string>
     <string name="sent_countdown">Message delivery countdown</string>
 
+    <!-- Enable emojis -->
+    <string name="pref_title_enable_emojis">Emoji support</string>
+    <string name="pref_summary_enable_emojis">Enable support for unicode emojis, a set of 471 nice emoticons</string>
+
+    <!-- Emoji Menu item -->
+    <string name="menu_insert_smiley">Insert smiley</string>
+    <string name="menu_insert_emoji">Insert emojis</string>
+
 </resources>
