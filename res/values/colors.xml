@@ -40,6 +40,7 @@
     <color name="widget_subject_text_color_unread">#555555</color>
 
     <color name="translucent_white">#ccffffff</color>
+    <color name="date_view_background">#00000000</color>
 
     <color name="banner_item_transparent">#00000000</color>
     <color name="banner_item_activated">#670099cc</color>
@@ -48,4 +49,8 @@
 
     <color name="text_shadow_color_light">#33000000</color>
     <color name="solid_white">#ffffffff</color>
+
+    <!-- QuickMessage colors from layout-->
+    <color name="quickmessage_body_text_color">#ff000000</color>
+    <color name="quickmessage_divider">#ff33b5e5</color>
 </resources>
