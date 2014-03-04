@@ -355,4 +355,30 @@
     <string name="banner_sms_promo_title_initial" msgid="510014388581481569">"SMS/MMS n\'est pas votre application pour les SMS"</string>
     <string name="banner_sms_promo_title_application" msgid="8123569785369713254">"<xliff:g id="APPNAME">%s</xliff:g> est votre application pour les SMS"</string>
     <string name="banner_sms_promo_message" msgid="3536714414252763826">"Vous pouvez modifier cette configuration dans \"Paramètres\"."</string>
+	<!-- String Manquants-->
+	<string name="abort_mms">Messagerie: Abandon MMS</string>
+    <string name="abort_mms_text ">Toucher pour interrompre et revenir.</string>
+	<string name="cell_broadcast_sender">Cell Broadcast Canal</string>
+    <string name="disk_storage_full_error">Erreur: Le stockage est plein.</string>
+    <string name="external_audio_item">Audio externe</string>
+	<string name="mms1">MMS1</string>
+    <string name="mms2">MMS2</string>
+    <string name="mms3">MMS3</string>
+	<string name="pending_mms">Messagerie: Un ou plusieurs MMS sont en cours.</string>
+    <string name="pending_mms_text">Toucher pour basculer l\'abonnement.</string>
+    <string name="pending_mms_title">MMS en attente sur un autre abonnement.</string>
+	<string name="progress_mms">Messagerie: MMS en cours...</string>
+    <string name="progress_mms_text ">Toucher pour réessayer</string>
+    <string name="progress_mms_title">Transaction MMS sur d'autres sub en cours</string>
+	<string name="select_subscription_title">Sélectionner l\'abonnement</string>
+    <string name="sub1">SUB 1</string>
+    <string name="sub2">SUB 2</string>
+    <string name="sub3">SUB 3</string>
+    <string name="subscription1_title">Abonnement 1</string>
+    <string name="subscription2_title">Abonnement 2</string>
+    <string name="subscription3_title">Abonnement 3</string>
+    <string name="system_audio_item">Système audio</string>
+    <string translatable="false" name="prefDefault_vibrate_false">jamais</string>
+    <string translatable="false" name="prefDefault_vibrate_true">toujours</string>
+
 </resources>
