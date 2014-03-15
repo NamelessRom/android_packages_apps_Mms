@@ -357,7 +357,7 @@
     <string name="banner_sms_promo_message" msgid="3536714414252763826">"Vous pouvez modifier cette configuration dans \"Paramètres\"."</string>
 	<!-- String Manquants-->
 	<string name="abort_mms">Messagerie: Abandon MMS</string>
-    <string name="abort_mms_text ">Toucher pour interrompre et revenir.</string>
+    <string name="abort_mms_text">Toucher pour interrompre et revenir.</string>
 	<string name="cell_broadcast_sender">Cell Broadcast Canal</string>
     <string name="disk_storage_full_error">Erreur: Le stockage est plein.</string>
     <string name="external_audio_item">Audio externe</string>
@@ -368,7 +368,7 @@
     <string name="pending_mms_text">Toucher pour basculer l\'abonnement.</string>
     <string name="pending_mms_title">MMS en attente sur un autre abonnement.</string>
 	<string name="progress_mms">Messagerie: MMS en cours...</string>
-    <string name="progress_mms_text ">Toucher pour réessayer</string>
+    <string name="progress_mms_text">Toucher pour réessayer</string>
     <string name="progress_mms_title">Transaction MMS sur d\'autres sub en cours</string>
 	<string name="select_subscription_title">Sélectionner l\'abonnement</string>
     <string name="sub1">SUB 1</string>
