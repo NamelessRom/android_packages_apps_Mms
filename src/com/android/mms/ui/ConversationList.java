@@ -20,6 +20,7 @@ package com.android.mms.ui;
 import android.app.ActionBar;
 import android.app.AlertDialog;
 import android.app.ListActivity;
+import android.app.ListFragment;
 import android.app.SearchManager;
 import android.app.SearchableInfo;
 import android.content.ActivityNotFoundException;
@@ -90,7 +91,7 @@ import java.util.HashSet;
 /**
  * This activity provides a list view of existing conversations.
  */
-public class ConversationList extends ListActivity implements DraftCache.OnDraftChangedListener {
+public class ConversationList extends ListFragment implements DraftCache.OnDraftChangedListener {
     private static final String TAG = "ConversationList";
     private static final boolean DEBUG = false;
     private static final boolean DEBUGCLEANUP = true;
@@ -120,6 +121,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     private View mSmsPromoBannerView;
     private int mSavedFirstVisiblePosition = AdapterView.INVALID_POSITION;
     private int mSavedFirstItemOffset;
+    private View mEmptyView;
 
     // keys for extras and icicles
     private final static String LAST_LIST_POS = "last_list_pos";
@@ -133,32 +135,20 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     private Toast mComposeDisabledToast;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+            Bundle savedInstanceState) {
+        final View v = inflater.inflate(R.layout.conversation_list_screen, container, false);
 
-        setContentView(R.layout.conversation_list_screen);
+        mSmsPromoBannerView = v.findViewById(R.id.banner_sms_promo);
+        mEmptyView = v.findViewById(R.id.empty);
 
-        mSmsPromoBannerView = findViewById(R.id.banner_sms_promo);
-
-        mQueryHandler = new ThreadListQueryHandler(getContentResolver());
-
-        ListView listView = getListView();
-        listView.setOnCreateContextMenuListener(mConvListOnCreateContextMenuListener);
-        listView.setOnKeyListener(mThreadListKeyListener);
-        listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
-        listView.setMultiChoiceModeListener(new ModeCallback());
-
-        // Tell the list view which view to display when the list is empty
-        listView.setEmptyView(findViewById(R.id.empty));
-
-        initListAdapter();
+        mQueryHandler = new ThreadListQueryHandler(getActivity().getContentResolver());
 
         setupActionBar();
-
-        setTitle(R.string.app_label);
+        setHasOptionsMenu(true);
 
         mHandler = new Handler();
-        mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
         boolean checkedMessageLimits = mPrefs.getBoolean(CHECKED_MESSAGE_LIMITS, false);
         if (DEBUG) Log.v(TAG, "checkedMessageLimits: " + checkedMessageLimits);
         if (!checkedMessageLimits) {
@@ -173,6 +163,23 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             mSavedFirstVisiblePosition = AdapterView.INVALID_POSITION;
             mSavedFirstItemOffset = 0;
         }
+
+        return v;
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        ListView listView = getListView();
+        listView.setOnCreateContextMenuListener(mConvListOnCreateContextMenuListener);
+        listView.setOnKeyListener(mThreadListKeyListener);
+        listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
+        listView.setMultiChoiceModeListener(new ModeCallback());
+
+        // Tell the list view which view to display when the list is empty
+        listView.setEmptyView(mEmptyView);
+
+        initListAdapter();
     }
 
     @Override
@@ -201,13 +208,13 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     }
 
     @Override
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
 
-        boolean isSmsEnabled = MmsConfig.isSmsEnabled(this);
+        boolean isSmsEnabled = MmsConfig.isSmsEnabled(getActivity());
         if (isSmsEnabled != mIsSmsEnabled) {
             mIsSmsEnabled = isSmsEnabled;
-            invalidateOptionsMenu();
+            getActivity().invalidateOptionsMenu();
         }
 
         mIsRunning = true;
@@ -221,7 +228,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         }
 
         // Show or hide the SMS promo banner
-        if (mIsSmsEnabled || MmsConfig.isSmsPromoDismissed(this)) {
+        if (mIsSmsEnabled || MmsConfig.isSmsPromoDismissed(getActivity())) {
             mSmsPromoBannerView.setVisibility(View.GONE);
         } else {
             initSmsPromoBanner();
@@ -232,9 +239,9 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     }
 
     private void setupActionBar() {
-        ActionBar actionBar = getActionBar();
+        ActionBar actionBar = getActivity().getActionBar();
 
-        ViewGroup v = (ViewGroup)LayoutInflater.from(this)
+        ViewGroup v = (ViewGroup)LayoutInflater.from(getActivity())
             .inflate(R.layout.conversation_list_actionbar, null);
         actionBar.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM,
                 ActionBar.DISPLAY_SHOW_CUSTOM);
@@ -242,6 +249,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 new ActionBar.LayoutParams(ActionBar.LayoutParams.WRAP_CONTENT,
                         ActionBar.LayoutParams.WRAP_CONTENT,
                         Gravity.CENTER_VERTICAL | Gravity.RIGHT));
+        actionBar.setTitle(R.string.app_label);
 
         mUnreadConvCount = (TextView)v.findViewById(R.id.unread_conv_count);
     }
@@ -255,15 +263,15 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     };
 
     private void initListAdapter() {
-        mListAdapter = new ConversationListAdapter(this, null);
+        mListAdapter = new ConversationListAdapter(getActivity(), null);
         mListAdapter.setOnContentChangedListener(mContentChangedListener);
         setListAdapter(mListAdapter);
         getListView().setRecyclerListener(mListAdapter);
     }
 
     private void initSmsPromoBanner() {
-        final PackageManager packageManager = getPackageManager();
-        final String smsAppPackage = Telephony.Sms.getDefaultSmsPackage(this);
+        final PackageManager packageManager = getActivity().getPackageManager();
+        final String smsAppPackage = Telephony.Sms.getDefaultSmsPackage(getActivity());
 
         // Get all the data we need about the default app to properly render the promo banner. We
         // try to show the icon and name of the user's selected SMS app and have the banner link
@@ -301,9 +309,9 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 @Override
                 public void onClick(View v) {
                     // Launch settings
-                    Intent settingsIntent = new Intent(ConversationList.this,
+                    Intent settingsIntent = new Intent(getActivity(),
                             MessagingPreferenceActivity.class);
-                    startActivityIfNeeded(settingsIntent, -1);
+                    getActivity().startActivityIfNeeded(settingsIntent, -1);
                 }
             });
         }
@@ -316,7 +324,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
      * turn on the recycler.
      */
     public synchronized void runOneTimeStorageLimitCheckForLegacyMessages() {
-        if (Recycler.isAutoDeleteEnabled(this)) {
+        if (Recycler.isAutoDeleteEnabled(getActivity())) {
             if (DEBUG) Log.v(TAG, "recycler is already turned on");
             // The recycler is already turned on. We don't need to check anything or warn
             // the user, just remember that we've made the check.
@@ -326,7 +334,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         new Thread(new Runnable() {
             @Override
             public void run() {
-                if (Recycler.checkForThreadsOverLimit(ConversationList.this)) {
+                if (Recycler.checkForThreadsOverLimit(getActivity())) {
                     if (DEBUG) Log.v(TAG, "checkForThreadsOverLimit TRUE");
                     // Dang, one or more of the threads are over the limit. Show an activity
                     // that'll encourage the user to manually turn on the setting. Delay showing
@@ -334,7 +342,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                     mHandler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
-                            Intent intent = new Intent(ConversationList.this,
+                            Intent intent = new Intent(getActivity(),
                                     WarnOfStorageLimitsActivity.class);
                             startActivity(intent);
                         }
@@ -342,7 +350,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 } else {
                     if (DEBUG) Log.v(TAG, "checkForThreadsOverLimit silently turning on recycler");
                     // No threads were over the limit. Turn on the recycler by default.
-                    runOnUiThread(new Runnable() {
+                    getActivity().runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             SharedPreferences.Editor editor = mPrefs.edit();
@@ -352,7 +360,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                     });
                 }
                 // Remember that we don't have to do the check anymore when starting MMS.
-                runOnUiThread(new Runnable() {
+                getActivity().runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         markCheckedMessageLimit();
@@ -373,17 +381,22 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         editor.apply();
     }
 
-    @Override
-    protected void onNewIntent(Intent intent) {
+    public void onSearchRequested() {
+        if (mSearchItem != null) {
+            mSearchItem.expandActionView();
+        }
+    }
+
+    public void onNewIntent(final Intent intent) {
         // Handle intents that occur after the activity has already been created.
         startAsyncQuery();
     }
 
     @Override
-    protected void onStart() {
+    public void onStart() {
         super.onStart();
 
-        MessagingNotification.cancelNotification(getApplicationContext(),
+        MessagingNotification.cancelNotification(getActivity().getApplicationContext(),
                 SmsRejectedReceiver.SMS_REJECTED_NOTIFICATION_ID);
 
         DraftCache.getInstance().addOnDraftChangedListener(this);
@@ -411,7 +424,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     }
 
     @Override
-    protected void onStop() {
+    public void onStop() {
         super.onStop();
 
         DraftCache.getInstance().removeOnDraftChangedListener(this);
@@ -451,7 +464,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             Conversation.startQueryForAll(mQueryHandler, THREAD_LIST_QUERY_TOKEN);
             Conversation.startQuery(mQueryHandler, UNREAD_THREADS_QUERY_TOKEN, Threads.READ + "=0");
         } catch (SQLiteException e) {
-            SqliteWrapper.checkSQLiteException(this, e);
+            SqliteWrapper.checkSQLiteException(getActivity(), e);
         }
     }
 
@@ -459,7 +472,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         @Override
         public boolean onQueryTextSubmit(String query) {
             Intent intent = new Intent();
-            intent.setClass(ConversationList.this, SearchActivity.class);
+            intent.setClass(getActivity(), SearchActivity.class);
             intent.putExtra(SearchManager.QUERY, query);
             startActivity(intent);
             mSearchItem.collapseActionView();
@@ -473,8 +486,8 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     };
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.conversation_list_menu, menu);
+    public void onCreateOptionsMenu(Menu menu, MenuInflater menuInflater) {
+        menuInflater.inflate(R.menu.conversation_list_menu, menu);
 
         mSearchItem = menu.findItem(R.id.search);
         mSearchView = (SearchView) mSearchItem.getActionView();
@@ -482,10 +495,11 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         mSearchView.setOnQueryTextListener(mQueryTextListener);
         mSearchView.setQueryHint(getString(R.string.search_hint));
         mSearchView.setIconifiedByDefault(true);
-        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
+        SearchManager searchManager = (SearchManager) getActivity()
+                .getSystemService(Context.SEARCH_SERVICE);
 
         if (searchManager != null) {
-            SearchableInfo info = searchManager.getSearchableInfo(this.getComponentName());
+            SearchableInfo info = searchManager.getSearchableInfo(getActivity().getComponentName());
             mSearchView.setSearchableInfo(info);
         }
 
@@ -496,7 +510,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                     com.android.internal.R.bool.config_cellBroadcastAppLinks);
             try {
                 if (isCellBroadcastAppLinkEnabled) {
-                    PackageManager pm = getPackageManager();
+                    PackageManager pm = getActivity().getPackageManager();
                     if (pm.getApplicationEnabledSetting("com.android.cellbroadcastreceiver")
                             == PackageManager.COMPONENT_ENABLED_STATE_DISABLED) {
                         isCellBroadcastAppLinkEnabled = false;  // CMAS app disabled
@@ -509,12 +523,10 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 cellBroadcastItem.setVisible(false);
             }
         }
-
-        return true;
     }
 
     @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
+    public void onPrepareOptionsMenu(Menu menu) {
         MenuItem item = menu.findItem(R.id.action_delete_all);
         if (item != null) {
             item.setVisible((mListAdapter.getCount() > 0) && mIsSmsEnabled);
@@ -530,15 +542,6 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 item.setVisible(false);
             }
         }
-        return true;
-    }
-
-    @Override
-    public boolean onSearchRequested() {
-        if (mSearchItem != null) {
-            mSearchItem.expandActionView();
-        }
-        return true;
     }
 
     @Override
@@ -550,7 +553,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 } else {
                     // Display a toast letting the user know they can not compose.
                     if (mComposeDisabledToast == null) {
-                        mComposeDisabledToast = Toast.makeText(this,
+                        mComposeDisabledToast = Toast.makeText(getActivity(),
                                 R.string.compose_disabled_toast, Toast.LENGTH_SHORT);
                     }
                     mComposeDisabledToast.show();
@@ -561,11 +564,11 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 confirmDeleteThread(-1L, mQueryHandler);
                 break;
             case R.id.action_settings:
-                Intent intent = new Intent(this, MessagingPreferenceActivity.class);
-                startActivityIfNeeded(intent, -1);
+                Intent intent = new Intent(getActivity(), MessagingPreferenceActivity.class);
+                getActivity().startActivityIfNeeded(intent, -1);
                 break;
             case R.id.action_debug_dump:
-                LogTag.dumpInternalTables(this);
+                LogTag.dumpInternalTables(getActivity());
                 break;
             case R.id.action_cell_broadcasts:
                 Intent cellBroadcastIntent = new Intent(Intent.ACTION_MAIN);
@@ -586,7 +589,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     }
 
     @Override
-    protected void onListItemClick(ListView l, View v, int position, long id) {
+    public void onListItemClick(ListView l, View v, int position, long id) {
         // Note: don't read the thread id data from the ConversationListItem view passed in.
         // It's unreliable to read the cached data stored in the view because the ListItem
         // can be recycled, and the same view could be assigned to a different position
@@ -595,7 +598,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         // (ConversationListAdapter extends CursorAdapter, so getItemAtPosition() should
         // return the cursor object, which is moved to the position passed in)
         Cursor cursor  = (Cursor) getListView().getItemAtPosition(position);
-        Conversation conv = Conversation.from(this, cursor);
+        Conversation conv = Conversation.from(getActivity(), cursor);
         long tid = conv.getThreadId();
 
         if (LogTag.VERBOSE) {
@@ -606,11 +609,11 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     }
 
     private void createNewMessage() {
-        startActivity(ComposeMessageActivity.createIntent(this, 0));
+        startActivity(ComposeMessageActivity.createIntent(getActivity(), 0));
     }
 
     private void openThread(long threadId) {
-        startActivity(ComposeMessageActivity.createIntent(this, threadId));
+        startActivity(ComposeMessageActivity.createIntent(getActivity(), threadId));
     }
 
     public static Intent createAddContactIntent(String address) {
@@ -638,7 +641,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             if (cursor == null || cursor.getPosition() < 0) {
                 return;
             }
-            Conversation conv = Conversation.from(ConversationList.this, cursor);
+            Conversation conv = Conversation.from(getActivity(), cursor);
             ContactList recipients = conv.getRecipients();
             menu.setHeaderTitle(recipients.formatNames(","));
 
@@ -665,7 +668,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
     public boolean onContextItemSelected(MenuItem item) {
         Cursor cursor = mListAdapter.getCursor();
         if (cursor != null && cursor.getPosition() >= 0) {
-            Conversation conv = Conversation.from(ConversationList.this, cursor);
+            Conversation conv = Conversation.from(getActivity(), cursor);
             long threadId = conv.getThreadId();
             switch (item.getItemId()) {
             case MENU_DELETE: {
@@ -905,7 +908,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                     mHandler.post(mDeleteObsoleteThreadsRunnable);
 
                     // 2. Mark all the conversations as seen.
-                    Conversation.markAllConversationsAsSeen(getApplicationContext());
+                    Conversation.markAllConversationsAsSeen(getActivity().getApplicationContext());
                 }
                 if (mSavedFirstVisiblePosition != AdapterView.INVALID_POSITION) {
                     // Restore the list to its previous position.
@@ -928,9 +931,9 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 @SuppressWarnings("unchecked")
                 Collection<Long> threadIds = (Collection<Long>)cookie;
                 confirmDeleteThreadDialog(new DeleteThreadListener(threadIds, mQueryHandler,
-                        ConversationList.this), threadIds,
+                        getActivity()), threadIds,
                         cursor != null && cursor.getCount() > 0,
-                        ConversationList.this);
+                        getActivity());
                 if (cursor != null) {
                     cursor.close();
                 }
@@ -951,13 +954,13 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                 if (threadId == -1) {
                     // Rebuild the contacts cache now that all threads and their associated unique
                     // recipients have been deleted.
-                    Contact.init(ConversationList.this);
+                    Contact.init(getActivity());
                 } else {
                     // Remove any recipients referenced by this single thread from the
                     // contacts cache. It's possible for two or more threads to reference
                     // the same contact. That's ok if we remove it. We'll recreate that contact
                     // when we init all Conversations below.
-                    Conversation conv = Conversation.get(ConversationList.this, threadId, false);
+                    Conversation conv = Conversation.get(getActivity(), threadId, false);
                     if (conv != null) {
                         ContactList recipients = conv.getRecipients();
                         for (Contact contact : recipients) {
@@ -966,20 +969,20 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
                     }
                 }
                 // Make sure the conversation cache reflects the threads in the DB.
-                Conversation.init(ConversationList.this);
+                Conversation.init(getActivity());
 
                 // Update the notification for new messages since they
                 // may be deleted.
-                MessagingNotification.nonBlockingUpdateNewMessageIndicator(ConversationList.this,
+                MessagingNotification.nonBlockingUpdateNewMessageIndicator(getActivity(),
                         MessagingNotification.THREAD_NONE, false);
                 // Update the notification for failed messages since they
                 // may be deleted.
-                MessagingNotification.nonBlockingUpdateSendFailedNotification(ConversationList.this);
+                MessagingNotification.nonBlockingUpdateSendFailedNotification(getActivity());
 
                 // Make sure the list reflects the delete
                 startAsyncQuery();
 
-                MmsWidgetProvider.notifyDatasetChanged(getApplicationContext());
+                MmsWidgetProvider.notifyDatasetChanged(getActivity().getApplicationContext());
                 break;
 
             case DELETE_OBSOLETE_THREADS_TOKEN:
@@ -998,12 +1001,12 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
 
         @Override
         public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-            MenuInflater inflater = getMenuInflater();
+            MenuInflater inflater = getActivity().getMenuInflater();
             mSelectedThreadIds = new HashSet<Long>();
             inflater.inflate(R.menu.conversation_multi_select_menu, menu);
 
             if (mMultiSelectActionBarView == null) {
-                mMultiSelectActionBarView = LayoutInflater.from(ConversationList.this)
+                mMultiSelectActionBarView = LayoutInflater.from(getActivity())
                     .inflate(R.layout.conversation_list_multi_select_actionbar, null);
 
                 mSelectedConvCount =
@@ -1018,7 +1021,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
         @Override
         public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
             if (mMultiSelectActionBarView == null) {
-                ViewGroup v = (ViewGroup)LayoutInflater.from(ConversationList.this)
+                ViewGroup v = (ViewGroup)LayoutInflater.from(getActivity())
                     .inflate(R.layout.conversation_list_multi_select_actionbar, null);
                 mode.setCustomView(v);
 
@@ -1058,7 +1061,7 @@ public class ConversationList extends ListActivity implements DraftCache.OnDraft
             mSelectedConvCount.setText(Integer.toString(checkedCount));
 
             Cursor cursor  = (Cursor)listView.getItemAtPosition(position);
-            Conversation conv = Conversation.from(ConversationList.this, cursor);
+            Conversation conv = Conversation.from(getActivity(), cursor);
             conv.setIsChecked(checked);
             long threadId = conv.getThreadId();
 

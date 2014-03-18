@@ -67,7 +67,31 @@
         <service android:name=".transaction.SmsReceiverService"
                  android:exported="false" />
 
-        <activity android:name=".ui.ConversationList"
+        <activity android:name=".ui.MainActivity"
+            android:label="@string/app_label"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:theme="@style/MmsHoloTheme"
+            android:uiOptions="splitActionBarWhenNarrow"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.APP_MESSAGING" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.android.cursor.dir/mms" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="vnd.android-dir/mms-sms" />
+            </intent-filter>
+        </activity>
+
+        <!--activity android:name=".ui.ConversationList"
                   android:label="@string/app_label"
                   android:configChanges="orientation|screenSize|keyboardHidden"
                   android:theme="@style/MmsHoloTheme"
@@ -89,7 +113,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="vnd.android-dir/mms-sms" />
             </intent-filter>
-        </activity>
+        </activity-->
 
         <activity android:name=".ui.ComposeMessageActivity"
                   android:configChanges="orientation|screenSize|keyboardHidden"
